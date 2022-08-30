@@ -1,14 +1,25 @@
 package com.abramkinapps.android.shoppinglist.data
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.abramkinapps.android.shoppinglist.domain.ShopItem
 import com.abramkinapps.android.shoppinglist.domain.ShopListRepository
 import java.lang.RuntimeException
 
 object ShopListRepositoryImpl: ShopListRepository {
 
-    private val shopList = mutableListOf<ShopItem>()
+    private val shopList = sortedSetOf<ShopItem>({ p0, p1 -> p0.id.compareTo(p1.id) })
+
+    private val shopListLD = MutableLiveData<List<ShopItem>>()
 
     private var autoIncrementId = 0
+
+    init {
+        for (i in 0 until 10) {
+            val item = ShopItem("Name $i", i, true)
+            addShopItem(item)
+        }
+    }
 
     override fun addShopItem(shopItem: ShopItem) {
 
@@ -17,11 +28,13 @@ object ShopListRepositoryImpl: ShopListRepository {
         }
 
         shopList.add(shopItem)
+        updateList()
     }
 
     override fun deleteShopItem(shopItem: ShopItem) {
 
         shopList.remove(shopItem)
+        updateList()
     }
 
     override fun editShopItem(shopItem: ShopItem) {
@@ -39,7 +52,11 @@ object ShopListRepositoryImpl: ShopListRepository {
       } ?: throw RuntimeException("Element with id $shopItemId not found")
     }
 
-    override fun getShopList(): List<ShopItem> {
-        return shopList.toList()
+    override fun getShopList(): LiveData<List<ShopItem>> {
+        return shopListLD
+    }
+
+    private fun updateList() {
+        shopListLD.value = shopList.toList()
     }
 }
